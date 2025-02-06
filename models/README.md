@@ -1,0 +1,1 @@
+Store Whisper model files here.

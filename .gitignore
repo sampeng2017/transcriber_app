@@ -1,0 +1,19 @@
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs and temp files
+temp/
+*.log
+
+# Node.js dependencies (when frontend is added)
+frontend/node_modules/
+
+# Environment variables
+.env
+
+# IDE settings
+.vscode/
+.idea/
