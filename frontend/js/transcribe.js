@@ -22,6 +22,46 @@ const modelSelect = document.getElementById('modelSelect');
 const processBtn = document.getElementById('processBtn');
 const processProgress = document.getElementById('processProgress');
 const processPercentage = document.getElementById('processPercentage');
+const showPromptToggle = document.getElementById('showPromptToggle');
+const promptEditor = document.getElementById('promptEditor');
+const summaryPromptText = document.getElementById('summaryPromptText');
+const notesPromptText = document.getElementById('notesPromptText');
+const copyTranscriptBtn = document.getElementById('copyTranscriptBtn');
+const copyResultBtn = document.getElementById('copyResultBtn');
+const transcriptionBlock = document.getElementById('transcriptionBlock');
+const resultBlock = document.getElementById('resultBlock');
+
+// Default prompts
+const DEFAULT_SUMMARY_PROMPT = "Please summarize this text concisely:\n\n";
+const DEFAULT_NOTES_PROMPT = `Convert this transcript into detailed yet informal meeting notes.
+
+Key requirements:
+1. Essential Details:
+   - Capture all key decisions and agreements
+   - List specific action items with owners (if mentioned)
+   - Include important numbers, dates, or deadlines
+   - Note any major concerns or risks discussed
+   - Highlight follow-up items
+
+2. Informal Style:
+   - Use casual, easy-to-read language
+   - Skip speaker names and formal transitions
+   - Use bullet points and simple sections
+   - Add brief context where helpful
+   - Feel free to use common abbreviations
+
+Format using:
+- Clear section headers (##)
+- Bullet points (-)
+- Sub-bullets where needed
+- Bold for important points (**)
+- Lists for action items
+
+Remember: Focus on what matters, skip the small talk, and keep it readable!`;
+
+// Initialize prompts
+if (summaryPromptText) summaryPromptText.value = DEFAULT_SUMMARY_PROMPT;
+if (notesPromptText) notesPromptText.value = DEFAULT_NOTES_PROMPT;
 
 // Drag and drop handlers
 dropZone.addEventListener('dragover', (e) => {
@@ -68,14 +108,10 @@ async function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Reset all displays
+    resetUI();  // Reset UI first
+
+    // Show progress
     transcribeProgress.style.display = 'block';
-    actionControls.style.display = 'none';
-    processBtn.disabled = true;
-    transcriptionDiv.style.display = 'none';
-    summaryDiv.style.display = 'none';
-    notesDiv.style.display = 'none';
-    
     status.textContent = 'Transcribing...';
     let progress = 0;
 
@@ -97,12 +133,20 @@ async function uploadFile(file) {
 
         const data = await response.json();
         transcribePercentage.textContent = '100%';
+        
         setTimeout(() => {
             transcribeProgress.style.display = 'none';
+            
+            // Show transcription block and its contents
+            transcriptionBlock.style.display = 'block';
+            transcriptionDiv.style.display = 'block';  // Make sure the div itself is visible
             transcriptionDiv.textContent = data.transcription;
-            transcriptionDiv.style.display = 'block';
+            
+            // Show copy button and controls
+            copyTranscriptBtn.style.display = 'flex';
             actionControls.style.display = 'block';
             processBtn.disabled = false;
+            
             status.textContent = 'Transcription complete';
         }, 500);
 
@@ -113,12 +157,81 @@ async function uploadFile(file) {
     }
 }
 
+// Explicitly handle Chrome-specific issues
+function initializePromptControls() {
+    // Force Chrome to recognize the elements
+    setTimeout(() => {
+        if (showPromptToggle && promptEditor) {
+            // Remove existing listeners first
+            showPromptToggle.removeEventListener('change', togglePromptEditor);
+            showPromptToggle.removeEventListener('click', togglePromptEditor);
+            
+            // Add both change and click listeners for Chrome
+            showPromptToggle.addEventListener('change', togglePromptEditor);
+            showPromptToggle.addEventListener('click', (e) => {
+                console.log('Checkbox clicked');
+                // Force update the display after a small delay
+                setTimeout(() => {
+                    togglePromptEditor();
+                }, 0);
+            });
+            
+            console.log('Prompt controls initialized');
+        } else {
+            console.error('Prompt controls not found');
+        }
+    }, 100);
+}
+
+function togglePromptEditor() {
+    if (!promptEditor || !showPromptToggle) {
+        console.error('Required elements not found');
+        return;
+    }
+    
+    console.log('Toggle state:', showPromptToggle.checked);
+    
+    // Force Chrome to update the display
+    requestAnimationFrame(() => {
+        promptEditor.style.display = showPromptToggle.checked ? 'block' : 'none';
+        console.log('Display updated to:', promptEditor.style.display);
+        updatePromptVisibility();
+    });
+}
+
+function updatePromptVisibility() {
+    if (!showPromptToggle || !promptEditor) return;
+    
+    const isVisible = showPromptToggle.checked;
+    console.log('Should be visible:', isVisible);
+    
+    if (!isVisible) {
+        promptEditor.style.display = 'none';
+        return;
+    }
+    
+    const action = actionSelect.value;
+    const summarizePrompt = document.getElementById('summarizePrompt');
+    const notesPrompt = document.getElementById('notesPrompt');
+    
+    if (summarizePrompt && notesPrompt) {
+        requestAnimationFrame(() => {
+            summarizePrompt.style.display = action === 'summarize' ? 'block' : 'none';
+            notesPrompt.style.display = action === 'notes' ? 'block' : 'none';
+            console.log('Prompts visibility updated');
+        });
+    }
+}
+
 async function processTranscription() {
     const transcription = transcriptionDiv.textContent;
     if (!transcription) return;
 
     const action = actionSelect.value;
     const model = modelSelect.value;
+    const prompt = action === 'summarize' ? 
+        summaryPromptText.value : 
+        notesPromptText.value;
     
     processBtn.disabled = true;
     processProgress.style.display = 'block';
@@ -136,7 +249,8 @@ async function processTranscription() {
     try {
         const formData = new FormData();
         formData.append('text', transcription);
-        formData.append('model', model);  // Add model to request
+        formData.append('model', model);
+        formData.append('prompt', prompt);
 
         const endpoint = action === 'summarize' ? '/summarize/' : '/convert-to-notes/';
         const response = await fetch(endpoint, {
@@ -153,13 +267,17 @@ async function processTranscription() {
         
         setTimeout(() => {
             processProgress.style.display = 'none';
+            resultBlock.style.display = 'block';
             if (action === 'summarize') {
                 summaryDiv.textContent = data.summary;
                 summaryDiv.style.display = 'block';
+                notesDiv.style.display = 'none';
             } else {
                 notesDiv.innerHTML = marked.parse(data.notes);
                 notesDiv.style.display = 'block';
+                summaryDiv.style.display = 'none';
             }
+            copyResultBtn.style.display = 'flex';
             status.textContent = `${action === 'summarize' ? 'Summary' : 'Notes'} complete`;
             processBtn.disabled = false;
         }, 500);
@@ -170,4 +288,140 @@ async function processTranscription() {
     } finally {
         clearInterval(progressInterval);
     }
+}
+
+// Initialize everything when the DOM is fully loaded
+function initializeUI() {
+    console.log('Initializing UI...');
+    
+    // Initialize prompts if they exist
+    if (summaryPromptText) summaryPromptText.value = DEFAULT_SUMMARY_PROMPT;
+    if (notesPromptText) notesPromptText.value = DEFAULT_NOTES_PROMPT;
+    
+    // Initialize prompt controls with Chrome-specific handling
+    initializePromptControls();
+    
+    // Add action select listener
+    if (actionSelect) {
+        actionSelect.addEventListener('change', updatePromptVisibility);
+    }
+    
+    // Initial visibility update
+    updatePromptVisibility();
+}
+
+// Use multiple initialization points for better browser compatibility
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeUI);
+} else {
+    initializeUI();
+}
+
+window.addEventListener('load', initializeUI);
+
+// Add this function to handle text copying
+async function copyText(type) {
+    let text = '';
+    let button;
+    
+    if (type === 'transcription') {
+        text = transcriptionDiv.textContent;
+        button = document.querySelector('.copy-btn[onclick*="transcription"]');
+    } else if (type === 'result') {
+        // Get the currently visible result
+        if (summaryDiv.style.display !== 'none') {
+            text = summaryDiv.textContent;
+        } else if (notesDiv.style.display !== 'none') {
+            // For notes, get the text content without HTML formatting
+            text = notesDiv.textContent;
+        }
+        button = document.querySelector('.copy-btn[onclick*="result"]');
+    }
+
+    if (!text) {
+        console.log('No text to copy');
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(text);
+        
+        // Visual feedback
+        const originalText = button.innerHTML;
+        button.innerHTML = '<span class="copy-icon">✓</span> Copied!';
+        button.classList.add('copied');
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('copied');
+        }, 2000);
+        
+    } catch (err) {
+        console.error('Failed to copy text:', err);
+        
+        // Fallback method
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+            document.execCommand('copy');
+            
+            // Visual feedback
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="copy-icon">✓</span> Copied!';
+            button.classList.add('copied');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('copied');
+            }, 2000);
+            
+        } catch (err) {
+            console.error('Fallback copy failed:', err);
+            button.innerHTML = '<span class="copy-icon">❌</span> Failed to copy';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+            }, 2000);
+        }
+        
+        document.body.removeChild(textarea);
+    }
+}
+
+function clearChat() {
+    // ... existing code ...
+    copyTranscriptBtn.style.display = 'none';
+    copyResultBtn.style.display = 'none';
+}
+
+// Update the resetUI function to be more specific
+function resetUI() {
+    // Hide blocks
+    transcriptionBlock.style.display = 'none';
+    resultBlock.style.display = 'none';
+    
+    // Reset transcription
+    transcriptionDiv.style.display = 'none';
+    transcriptionDiv.textContent = '';
+    
+    // Reset result sections
+    summaryDiv.style.display = 'none';
+    summaryDiv.textContent = '';
+    notesDiv.style.display = 'none';
+    notesDiv.innerHTML = '';
+    
+    // Hide buttons and controls
+    copyTranscriptBtn.style.display = 'none';
+    copyResultBtn.style.display = 'none';
+    actionControls.style.display = 'none';
+    
+    // Reset progress
+    transcribeProgress.style.display = 'none';
+    processProgress.style.display = 'none';
 } 

@@ -148,4 +148,86 @@
 
 #processBtn {
     min-width: 100px;
+}
+
+.prompt-controls {
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.prompt-editor {
+    margin-top: 10px;
+}
+
+.prompt-section {
+    margin-bottom: 15px;
+}
+
+.prompt-section h4 {
+    margin: 0 0 5px 0;
+    color: #666;
+}
+
+.prompt-section textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    resize: vertical;
+}
+
+.prompt-section textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.result-block {
+    margin: 20px 0;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.result-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #495057;
+}
+
+.copy-btn:hover {
+    background-color: #e9ecef;
+}
+
+.copy-btn:active {
+    background-color: #dee2e6;
+}
+
+.copy-btn.copied {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.copy-icon {
+    font-size: 16px;
 } 

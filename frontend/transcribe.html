@@ -28,19 +28,48 @@
 
         <div class="result-section">
             <div id="status" class="status">Ready to transcribe</div>
-            <div id="transcription" class="transcription" style="display: none;"></div>
             
+            <div class="result-block" id="transcriptionBlock" style="display: none;">
+                <div class="result-header">
+                    <h3>Transcription</h3>
+                    <button class="copy-btn" onclick="copyText('transcription')" style="display: none;" id="copyTranscriptBtn">
+                        <span class="copy-icon">📋</span> Copy
+                    </button>
+                </div>
+                <div id="transcription" class="transcription"></div>
+            </div>
+
             <div class="action-controls" id="actionControls" style="display: none;">
                 <div class="control-group">
-                    <select id="actionSelect" class="action-select">
+                    <select id="actionSelect" class="action-select" onchange="updatePromptVisibility()">
                         <option value="summarize">Generate Summary</option>
                         <option value="notes">Convert to Notes</option>
                     </select>
                     <select id="modelSelect" class="model-select">
-                        <option value="mistral:7b">Mistral 7B</option>
+                        <option value="llama3:8b">Llama3 8B</option>
+                        <option value="qwen2.5:7b">Qwen2.5 7B</option>
                         <option value="qwen2:7b">Qwen2 7B</option>
+                        <option value="mistral:7b">Mistral 7B</option>
                     </select>
                     <button id="processBtn" onclick="processTranscription()">Process</button>
+                </div>
+                
+                <div class="prompt-controls">
+                    <label>
+                        <input type="checkbox" id="showPromptToggle" onchange="togglePromptEditor()">
+                        Show/Edit Prompt
+                    </label>
+                    
+                    <div id="promptEditor" class="prompt-editor" style="display: none;">
+                        <div id="summarizePrompt" class="prompt-section">
+                            <h4>Summary Prompt</h4>
+                            <textarea id="summaryPromptText" rows="6"></textarea>
+                        </div>
+                        <div id="notesPrompt" class="prompt-section">
+                            <h4>Notes Prompt</h4>
+                            <textarea id="notesPromptText" rows="6"></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -49,8 +78,16 @@
                 <span class="progress-text">Processing... <span class="progress-percentage" id="processPercentage">0%</span></span>
             </div>
             
-            <div id="summary" class="summary" style="display: none;"></div>
-            <div id="notes" class="notes" style="display: none;"></div>
+            <div class="result-block" id="resultBlock" style="display: none;">
+                <div class="result-header">
+                    <h3>Result</h3>
+                    <button class="copy-btn" onclick="copyText('result')" style="display: none;" id="copyResultBtn">
+                        <span class="copy-icon">📋</span> Copy
+                    </button>
+                </div>
+                <div id="summary" class="summary" style="display: none;"></div>
+                <div id="notes" class="notes" style="display: none;"></div>
+            </div>
         </div>
     </div>
 

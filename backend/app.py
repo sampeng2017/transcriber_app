@@ -48,7 +48,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Available Ollama models
 AVAILABLE_MODELS = ["mistral:7b", "qwen2:7b"]
-DEFAULT_MODEL = "mistral:7b" if "mistral:7b" in AVAILABLE_MODELS else "qwen2:7b"
+DEFAULT_MODEL = "llama3:8b"
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):
@@ -74,13 +74,17 @@ async def transcribe_audio(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
 @app.post("/summarize/")
-async def summarize_text(text: str = Form(...), model: str = Form(DEFAULT_MODEL)):
+async def summarize_text(
+    text: str = Form(...), 
+    model: str = Form(DEFAULT_MODEL),
+    prompt: str = Form("Please summarize this text concisely:\n\n")
+):
     try:
         response = ollama.chat(
             model=model,
             messages=[{
                 "role": "user", 
-                "content": f"Please summarize this text concisely:\n\n{text}"
+                "content": f"{prompt}{text}"
             }]
         )
         return {"summary": response["message"]["content"]}
@@ -90,23 +94,15 @@ async def summarize_text(text: str = Form(...), model: str = Form(DEFAULT_MODEL)
         raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
 
 @app.post("/convert-to-notes/")
-async def convert_to_notes(text: str = Form(...), model: str = Form(DEFAULT_MODEL)):
+async def convert_to_notes(
+    text: str = Form(...), 
+    model: str = Form(DEFAULT_MODEL),
+    prompt: str = Form(None)
+):
     try:
-        prompt = """Convert this transcript into informal meeting notes. Create a clear, readable format that:
-        - Captures main discussion points and key takeaways
-        - Lists action items and next steps
-        - Highlights important decisions
-        - Uses bullet points and sections
-        - Keeps a casual, easy-to-read tone
-        - Omits speaker names
-        - Organizes information by topics rather than conversation flow
-        
-        Format using markdown with:
-        - Headers for main sections
-        - Bullet points for details
-        - Bold text for important points
-        - Clear spacing between sections"""
-        
+        if prompt is None:
+            prompt = """Convert this transcript into detailed yet informal meeting notes..."""  # Your existing default prompt
+            
         response = ollama.chat(
             model=model,
             messages=[{
@@ -115,7 +111,6 @@ async def convert_to_notes(text: str = Form(...), model: str = Form(DEFAULT_MODE
             }]
         )
         return {"notes": response["message"]["content"]}
-
     except ResponseError as e:
         raise HTTPException(status_code=500, detail=f"Ollama error: {str(e)}")
     except Exception as e:
@@ -123,12 +118,14 @@ async def convert_to_notes(text: str = Form(...), model: str = Form(DEFAULT_MODE
 
 @app.get("/models")
 async def get_models():
-    """Get list of available models"""
-    try:
-        models = ollama.list()
-        return {"models": [model['name'] for model in models['models']]}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get models: {str(e)}")
+    return {
+        "models": [
+            "llama3:8b",
+            "qwen2.5:7b",
+            "qwen2:7b",
+            "mistral:7b"
+        ]
+    }
 
 @app.websocket("/chat")
 async def websocket_endpoint(websocket: WebSocket):
@@ -145,9 +142,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 }))
                 continue
             
-            # Extract and validate model and message
+            # Extract message data
             model = message_data.get("model", DEFAULT_MODEL)
             message = message_data.get("message", "").strip()
+            history = message_data.get("history", [])
             
             if not message:
                 await websocket.send_text(json.dumps({
@@ -159,7 +157,7 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 stream = ollama.chat(
                     model=model,
-                    messages=[{"role": "user", "content": message}],
+                    messages=history + [{"role": "user", "content": message}],
                     stream=True
                 )
 
@@ -194,7 +192,6 @@ async def websocket_endpoint(websocket: WebSocket):
             }))
         except:
             pass
-    
     finally:
         try:
             await websocket.close()
