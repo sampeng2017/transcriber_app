@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcribe Audio</title>
+    <link rel="stylesheet" href="/frontend/css/common.css">
+    <link rel="stylesheet" href="/frontend/css/transcribe.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="/chat">Chat</a>
+        <a href="/transcribe">Transcribe</a>
+    </div>
+
+    <div class="container">
+        <div class="upload-section" id="dropZone">
+            <input type="file" id="fileInput" accept="audio/*" style="display: none">
+            <button onclick="document.getElementById('fileInput').click()">Choose Audio File</button>
+            <p>or drag and drop an audio file here</p>
+            <div class="file-info" id="fileInfo"></div>
+            <div class="progress-container" id="transcribeProgress" style="display: none;">
+                <div class="progress-spinner"></div>
+                <span class="progress-text">Transcribing... <span class="progress-percentage" id="transcribePercentage">0%</span></span>
+            </div>
+        </div>
+
+        <div class="result-section">
+            <div id="status" class="status">Ready to transcribe</div>
+            <div id="transcription" class="transcription" style="display: none;"></div>
+            
+            <div class="action-controls" id="actionControls" style="display: none;">
+                <div class="control-group">
+                    <select id="actionSelect" class="action-select">
+                        <option value="summarize">Generate Summary</option>
+                        <option value="notes">Convert to Notes</option>
+                    </select>
+                    <select id="modelSelect" class="model-select">
+                        <option value="mistral:7b">Mistral 7B</option>
+                        <option value="qwen2:7b">Qwen2 7B</option>
+                    </select>
+                    <button id="processBtn" onclick="processTranscription()">Process</button>
+                </div>
+            </div>
+
+            <div class="progress-container" id="processProgress" style="display: none;">
+                <div class="progress-spinner"></div>
+                <span class="progress-text">Processing... <span class="progress-percentage" id="processPercentage">0%</span></span>
+            </div>
+            
+            <div id="summary" class="summary" style="display: none;"></div>
+            <div id="notes" class="notes" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="/frontend/js/transcribe.js"></script>
+</body>
+</html> 

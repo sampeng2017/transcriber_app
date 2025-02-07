@@ -1,73 +1,117 @@
-# 🎤 Transcriber App
+# AI-Powered Transcription and Chat Application
 
-A **local transcription and summarization app** that allows users to:
-- **Upload audio files** (MP3, WAV)
-- **Transcribe audio to text** using OpenAI Whisper
-- **Summarize the transcribed text** using local LLM models (Mistral, Gemma, Qwen, Llama)
-- **Runs fully offline** with **FastAPI**, **Whisper**, and **Ollama**
+A web application that combines audio transcription, text processing, and AI chat capabilities using FastAPI and Ollama.
 
----
+## Features
 
-## 🚀 Setup Instructions (Fresh Machine)
+### 1. Audio Transcription & Processing
+- **Audio File Upload**
+  - Drag & drop interface
+  - Support for various audio formats
+  - Real-time progress tracking
+- **Processing Options**
+  - Generate Concise Summary
+  - Convert to Informal Meeting Notes
+- **Model Selection**
+  - Choose between different LLM models (Mistral 7B, Qwen2 7B)
+- **Output Formats**
+  - Clean, formatted transcriptions
+  - Markdown-rendered notes
+  - Structured summaries
 
-### 1️⃣ Install System Dependencies
-Before running the app, install the following system dependencies:
+### 2. AI Chat Interface
+- Real-time chat with AI models
+- Model selection for different conversations
+- WebSocket-based streaming responses
+- Clean, intuitive interface
 
-#### 🔹 On macOS (Homebrew)
+## Getting Started
+
+### Prerequisites
+- Python 3.8+
+- [Ollama](https://ollama.ai/) installed locally
+- Required models pulled in Ollama:
 ```bash
-brew install git python3 ffmpeg node
-
- #### On ubuntu
- ```bash
- sudo apt install git python3 ffmpeg nodejs
- ```
-
-### 2️⃣ Clone the Repository
-```bash
-git clone https://github.com/your-username/transcriber-app.git
-cd transcriber-app
+ollama pull mistral:7b
+ollama pull qwen2:7b
 ```
 
-### set up python environment
+### Installation
+
+1. Clone the repository:
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-### install backend dependencies
-```bash
-pip install -r backend/requirements.txt
-```
-### install whisper & FFmpeg
-```bash
-brew install ffmpeg  # macOS
-sudo apt install ffmpeg  # Linux
+git clone [your-repo-url]
+cd [your-repo-name]
 ```
 
-### install and set up ollama
-#### install ollama
+2. Install dependencies:
 ```bash
-brew install ollama  # macOS
-```
-#### Download ollama models  
-```bash
-ollama pull mistral
-ollama pull gemma
-ollama pull qwen
-ollama pull llama
-```
-### start ollama server
-```bash
-ollama serve
+pip install -r requirements.txt
 ```
 
-### start the backend server
+3. Start the server:
 ```bash
 uvicorn backend.app:app --reload
 ```
 
-once the server is running, open http://127.0.0.1:8000/docs (Swagger API UI)
+4. Access the application:
+- Chat Interface: http://localhost:8000/chat
+- Transcription Interface: http://localhost:8000/transcribe
 
-### API endpoints
-post `/transcribe/` - Upload an audio file and get its transcription
-post `/summarize/` - Summarize the transcribed text
+## Usage
+
+### Transcription Interface
+1. Upload an audio file by:
+   - Dragging and dropping onto the upload area
+   - Clicking "Choose Audio File" button
+2. Wait for transcription to complete
+3. Select desired processing option:
+   - "Generate Summary" for concise overview
+   - "Convert to Notes" for detailed meeting notes
+4. Choose preferred AI model
+5. Click "Process" to generate output
+
+### Chat Interface
+1. Select preferred AI model
+2. Type message in input field
+3. View real-time streaming responses
+4. Navigate between conversations
+
+## Technical Stack
+- **Backend**: FastAPI
+- **AI Models**: Ollama (Mistral 7B, Qwen2 7B)
+- **Frontend**: HTML, CSS, JavaScript
+- **Real-time Communication**: WebSocket
+- **Audio Processing**: Whisper
+
+## Project Structure
+```
+project/
+├── backend/
+│   └── app.py
+├── frontend/
+│   ├── css/
+│   │   ├── common.css
+│   │   ├── chat.css
+│   │   └── transcribe.css
+│   ├── js/
+│   │   ├── chat.js
+│   │   └── transcribe.js
+│   ├── chat.html
+│   └── transcribe.html
+└── requirements.txt
+```
+
+## Contributing
+Feel free to submit issues, fork the repository, and create pull requests for any improvements.
+
+## License
+[Your chosen license]
+
+## 📚 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/transcribe/` | POST | Upload an audio file and get its transcription |
+| `/summarize/` | POST | Summarize the transcribed text |
 

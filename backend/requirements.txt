@@ -4,3 +4,5 @@ openai-whisper
 ffmpeg-python
 python-multipart
 ollama
+python-socketio>=5.11.0
+aiohttp>=3.9.0
