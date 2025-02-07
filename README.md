@@ -28,7 +28,7 @@ A web application that combines audio transcription, text processing, and AI cha
 ## Getting Started
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.11 (other versions may work but not tested)
 - [Ollama](https://ollama.ai/) installed locally
 - Required models pulled in Ollama:
 ```bash
