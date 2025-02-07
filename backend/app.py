@@ -8,6 +8,7 @@ from ollama._types import ResponseError
 import os
 import json
 from typing import List
+from .config import MODELS, DEFAULT_MODEL
 
 app = FastAPI()
 
@@ -48,7 +49,6 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Available Ollama models
 AVAILABLE_MODELS = ["mistral:7b", "qwen2:7b"]
-DEFAULT_MODEL = "llama3:8b"
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):
@@ -118,14 +118,7 @@ async def convert_to_notes(
 
 @app.get("/models")
 async def get_models():
-    return {
-        "models": [
-            "llama3:8b",
-            "qwen2.5:7b",
-            "qwen2:7b",
-            "mistral:7b"
-        ]
-    }
+    return {"models": MODELS}
 
 @app.websocket("/chat")
 async def websocket_endpoint(websocket: WebSocket):

@@ -16,10 +16,7 @@
     <div class="chat-container">
         <div class="controls">
             <select id="modelSelect">
-                <option value="llama3:8b">Llama3 8B</option>
-                <option value="qwen2.5:7b">Qwen2.5 7B</option>
-                <option value="qwen2:7b">Qwen2 7B</option>
-                <option value="mistral:7b">Mistral 7B</option>
+                <!-- Options will be populated dynamically -->
             </select>
             <button id="clearBtn" onclick="clearChat()">Clear Chat</button>
         </div>
@@ -31,6 +28,7 @@
         </div>
     </div>
 
+    <script src="/frontend/js/common.js"></script>
     <script src="/frontend/js/chat.js"></script>
 </body>
 </html> 
