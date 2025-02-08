@@ -111,6 +111,15 @@ async function sendMessage() {
     const message = messageInput.value.trim();
     if (!message) return;
 
+    // Get the selected model from the dropdown
+    const selectedModel = modelSelect.value; // Ensure this captures the selected model
+    console.log('Selected model from dropdown:', selectedModel); // Debug log
+
+    if (!selectedModel) {
+        showError('Please select a model before sending a message.');
+        return;
+    }
+
     // Add user message to UI
     const userMessageDiv = document.createElement('div');
     userMessageDiv.className = 'user-message';
@@ -124,7 +133,7 @@ async function sendMessage() {
         // Send message with context
         ws.send(JSON.stringify({
             message: message,
-            model: modelSelect.value,
+            model: selectedModel, // Use the selected model here
             history: chatHistory
         }));
 
@@ -161,17 +170,29 @@ messageInput.addEventListener('keypress', (e) => {
     }
 });
 
-// Fetch available models
-fetch('/models')
-    .then(response => response.json())
-    .then(data => {
-        if (data.models) {
-            modelSelect.innerHTML = data.models
-                .map(model => `<option value="${model}">${model}</option>`)
-                .join('');
-        }
-    })
-    .catch(error => console.error('Error fetching models:', error));
+document.addEventListener('DOMContentLoaded', () => {
+    const modelSelect = document.getElementById('modelSelect');
+
+    // Fetch available models
+    fetch('/models')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Fetched models:', data); // Debug log
+            if (data.models) {
+                console.log('Models array:', data.models); // Log the models array
+                modelSelect.innerHTML = data.models
+                    .map(model => `<option value="${model}">${model}</option>`)
+                    .join('');
+                console.log('Dropdown options:', modelSelect.innerHTML); // Log the dropdown options
+            }
+        })
+        .catch(error => console.error('Error fetching models:', error));
+
+    // Add change event listener
+    modelSelect.addEventListener('change', () => {
+        console.log('Dropdown changed, selected model:', modelSelect.value);
+    });
+});
 
 // Initial connection
 connect();

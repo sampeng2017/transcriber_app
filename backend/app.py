@@ -1,14 +1,20 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 import whisper
 import ollama
 from ollama._types import ResponseError
 import os
 import json
 from typing import List
-from .config import MODELS, DEFAULT_MODEL
+from .config import DEFAULT_MODEL
+import httpx
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -47,8 +53,35 @@ except Exception as e:
 TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# Available Ollama models
-AVAILABLE_MODELS = ["mistral:7b", "qwen2:7b"]
+# Initialize an empty list for models
+MODELS = []
+
+async def get_ollama_models():
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:11434/api/tags")
+            if response.status_code == 200:
+                data = response.json()
+                # Extract model names from the response
+                models = [model["name"] for model in data["models"]]
+                logger.info(f"Retrieved models from Ollama: {models}")  # Log the retrieved models
+                return models
+            else:
+                logger.error(f"Failed to fetch models, status code: {response.status_code}")
+                return []
+    except Exception as e:
+        logger.error(f"Error fetching Ollama models: {e}")
+        return []
+
+@app.on_event("startup")
+async def startup_event():
+    global MODELS
+    MODELS = await get_ollama_models()
+    if not MODELS:
+        logger.warning("Warning: No Ollama models found. Please ensure Ollama is running and models are installed.")
+        # Fallback to some default models in case the fetch fails
+        MODELS = ["mistral:7b", "llama2:7b", "qwen2:7b"]
+    logger.info(f"Models available at startup: {MODELS}")  # Log the models available at startup
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):
@@ -118,7 +151,7 @@ async def convert_to_notes(
 
 @app.get("/models")
 async def get_models():
-    return {"models": MODELS}
+    return JSONResponse(content={"models": MODELS})
 
 @app.websocket("/chat")
 async def websocket_endpoint(websocket: WebSocket):

@@ -424,4 +424,35 @@ function resetUI() {
     // Reset progress
     transcribeProgress.style.display = 'none';
     processProgress.style.display = 'none';
-} 
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modelSelectTranscribe = document.getElementById('modelSelect');
+
+    if (!modelSelectTranscribe) {
+        console.error('Dropdown element not found!');
+        return; // Exit if the element is not found
+    }
+
+    // Fetch available models
+    fetch('/models')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Fetched models:', data); // Debug log
+            if (data.models) {
+                console.log('Models array:', data.models); // Log the models array
+                modelSelectTranscribe.innerHTML = data.models
+                    .map(model => `<option value="${model}">${model}</option>`)
+                    .join('');
+                console.log('Dropdown options:', modelSelectTranscribe.innerHTML); // Log the dropdown options
+            } else {
+                console.error('No models found in response');
+            }
+        })
+        .catch(error => console.error('Error fetching models:', error));
+
+    // Add change event listener
+    modelSelectTranscribe.addEventListener('change', () => {
+        console.log('Dropdown changed, selected model:', modelSelectTranscribe.value);
+    });
+}); 
