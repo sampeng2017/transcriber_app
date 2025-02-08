@@ -45,15 +45,44 @@ function connect() {
         if (currentResponse === null) {
             currentResponse = document.createElement('div');
             currentResponse.className = 'ai-message';
+            currentResponse.setAttribute('data-content', ''); // Initialize empty content
             messageContainer.appendChild(currentResponse);
         }
 
         if (!data.done) {
-            currentResponse.textContent += data.chunk;
+            // Accumulate content
+            const newContent = currentResponse.getAttribute('data-content') + data.chunk;
+            currentResponse.setAttribute('data-content', newContent);
+            
+            // Render accumulated content
+            try {
+                currentResponse.innerHTML = marked.parse(newContent, {
+                    breaks: true,
+                    gfm: true,
+                    sanitize: true
+                });
+            } catch (e) {
+                // If markdown parsing fails, show raw content
+                currentResponse.textContent = newContent;
+            }
+            
             messageContainer.scrollTop = messageContainer.scrollHeight;
         } else {
-            // Add completed response to history
-            addMessageToHistory('assistant', currentResponse.textContent);
+            // Final render
+            const finalContent = currentResponse.getAttribute('data-content');
+            try {
+                currentResponse.innerHTML = marked.parse(finalContent, {
+                    breaks: true,
+                    gfm: true,
+                    sanitize: true
+                });
+            } catch (e) {
+                currentResponse.textContent = finalContent;
+            }
+            
+            // Add to history and cleanup
+            addMessageToHistory('assistant', finalContent);
+            currentResponse = null;
             enableInterface();
         }
     };
@@ -145,4 +174,58 @@ fetch('/models')
     .catch(error => console.error('Error fetching models:', error));
 
 // Initial connection
-connect(); 
+connect();
+
+// Update containsMarkdown function to be more precise
+function containsMarkdown(text) {
+    // Check for common markdown patterns
+    const markdownPatterns = [
+        /#{1,6}\s/m, // headers
+        /\*\*.+?\*\*/s, // bold
+        /\*.+?\*/s, // italic
+        /^-\s.+/m, // unordered lists
+        /^\d+\.\s.+/m, // ordered lists
+        /\[.+?\]\(.+?\)/s, // links
+        /```[\s\S]+?```/m, // code blocks
+        /^>\s.+/m, // blockquotes
+        /\|.+?\|/m, // tables
+        /^-{3,}/m, // horizontal rules
+        /^###\s/m, // specific header pattern often used
+    ];
+    
+    return markdownPatterns.some(pattern => pattern.test(text));
+}
+
+// Helper function to safely render markdown
+function safeMarkdownRender(content) {
+    try {
+        return marked.parse(content, {
+            breaks: true,
+            gfm: true,
+            sanitize: true
+        });
+    } catch (e) {
+        console.warn('Markdown parsing failed:', e);
+        return content;
+    }
+}
+
+// Update the message display function
+function addMessageToUI(content, isUser) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = isUser ? 'user-message' : 'ai-message';
+    
+    if (!isUser && containsMarkdown(content)) {
+        // Use marked to render markdown
+        messageDiv.innerHTML = marked.parse(content, {
+            breaks: true, // Enable line breaks
+            gfm: true, // Enable GitHub Flavored Markdown
+            sanitize: true // Prevent XSS attacks
+        });
+    } else {
+        messageDiv.textContent = content;
+    }
+    
+    messageContainer.appendChild(messageDiv);
+    messageContainer.scrollTop = messageContainer.scrollHeight;
+} 
