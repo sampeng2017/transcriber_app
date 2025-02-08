@@ -28,9 +28,10 @@ A web application that combines audio transcription, text processing, and AI cha
 ## Getting Started
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.11 (other versions may work but are not tested)
 - [Ollama](https://ollama.ai/) installed locally
-- Required models pulled in Ollama:
+-  Pull the necessary models using Ollama (not all are needed, but at least one is needed):
+
 ```bash
 ollama pull llama3:8b
 ollama pull qwen2.5:7b
@@ -42,8 +43,8 @@ ollama pull mistral:7b
 
 1. Clone the repository:
 ```bash
-git clone [your-repo-url]
-cd [your-repo-name]
+git clone https://github.com/sampeng2017/transcriber_app.git
+cd transcriber_app
 ```
 
 2. Install dependencies:
@@ -90,18 +91,21 @@ uvicorn backend.app:app --reload
 ```
 project/
 ├── backend/
-│   └── app.py
+│   ├── app.py
+│   ├── config.py
+│   └── requirements.txt
 ├── frontend/
 │   ├── css/
 │   │   ├── common.css
 │   │   ├── chat.css
 │   │   └── transcribe.css
 │   ├── js/
+│   │   ├── common.js
 │   │   ├── chat.js
 │   │   └── transcribe.js
 │   ├── chat.html
 │   └── transcribe.html
-└── requirements.txt
+└── README.md
 ```
 
 ## Contributing
@@ -112,8 +116,10 @@ Feel free to submit issues, fork the repository, and create pull requests for an
 
 ## 📚 API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/transcribe/` | POST | Upload an audio file and get its transcription |
-| `/summarize/` | POST | Summarize the transcribed text |
+| Endpoint       | Method | Description                                         |
+|----------------|--------|-----------------------------------------------------|
+| `/transcribe/` | POST   | Upload an audio file and get its transcription.     |
+| `/summarize/`  | POST   | Summarize the transcribed text.                     |
+| `/convert-to-notes/` | POST | Convert the transcribed text into detailed notes. |
+| `/models`      | GET    | Retrieve the list of available LLM models.          |
 
