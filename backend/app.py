@@ -11,6 +11,7 @@ from typing import List
 from .config import DEFAULT_MODEL
 import httpx
 import logging
+import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -153,6 +154,16 @@ async def convert_to_notes(
 async def get_models():
     return JSONResponse(content={"models": MODELS})
 
+@app.get("/api/config")
+async def get_config():
+    google_api_key = os.getenv("GOOGLE_API_KEY")
+    search_engine_id = os.getenv("SEARCH_ENGINE_ID")
+    logger.info(f"Google API Key: {google_api_key}, Search Engine ID: {search_engine_id}")
+    return JSONResponse(content={
+        "googleApiKey": google_api_key,
+        "searchEngineId": search_engine_id
+    })
+
 @app.websocket("/chat")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -172,42 +183,26 @@ async def websocket_endpoint(websocket: WebSocket):
             model = message_data.get("model", DEFAULT_MODEL)
             message = message_data.get("message", "").strip()
             history = message_data.get("history", [])
+            use_search = message_data.get("useSearch", False)
             
+            logger.info(f"Received message: {message}, use_search: {use_search}")
+
             if not message:
                 await websocket.send_text(json.dumps({
                     "error": "Empty message"
                 }))
                 continue
 
-            # Stream the response from Ollama
-            try:
-                stream = ollama.chat(
-                    model=model,
-                    messages=history + [{"role": "user", "content": message}],
-                    stream=True
-                )
-
-                for chunk in stream:
-                    if 'message' in chunk and 'content' in chunk['message']:
-                        await websocket.send_text(json.dumps({
-                            "chunk": chunk['message']['content'],
-                            "done": False
-                        }))
-
-                # Send completion message
-                await websocket.send_text(json.dumps({
-                    "chunk": "",
-                    "done": True
-                }))
-
-            except ResponseError as e:
-                await websocket.send_text(json.dumps({
-                    "error": f"Ollama error: {str(e)}"
-                }))
-            except Exception as e:
-                await websocket.send_text(json.dumps({
-                    "error": f"Processing error: {str(e)}"
-                }))
+            if use_search:
+                logger.info("Invoking search API...")
+                search_response = perform_search(message)
+                logger.info(f"Search API response: {search_response}")
+                search_results = format_search_results(search_response)
+                logger.info(f"Formatted search results: {search_results}")
+                prompt = f"merge, organize the search response string into a consolidated results, can you bullet list, and can list search sources if available.\n\n{search_results}"
+                await stream_ollama_response(websocket, prompt, model, history)
+            else:
+                await stream_ollama_response(websocket, message, model, history)
 
     except WebSocketDisconnect:
         pass
@@ -223,6 +218,64 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.close()
         except:
             pass
+
+def perform_search(query):
+    google_api_key = os.getenv("GOOGLE_API_KEY")
+    search_engine_id = os.getenv("SEARCH_ENGINE_ID")
+    if not google_api_key or not search_engine_id:
+        raise ValueError("Google API key and search engine ID must be set")
+    
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        "key": google_api_key,
+        "cx": search_engine_id,
+        "q": query,
+        "num": 5
+    }
+    logger.info(f"Performing search with URL: {url} and params: {params}")
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    logger.info(f"Search API response: {response.json()}")
+    return response.json()
+
+def format_search_results(search_response):
+    results = []
+    for item in search_response.get('items', []):
+        title = item.get('title')
+        snippet = item.get('snippet')
+        link = item.get('link')
+        results.append(f"{title}\n{snippet}\n{link}\n")
+    return "\n".join(results)
+
+async def stream_ollama_response(websocket, message, model, history):
+    try:
+        stream = ollama.chat(
+            model=model,
+            messages=history + [{"role": "user", "content": message}],
+            stream=True
+        )
+
+        for chunk in stream:
+            if 'message' in chunk and 'content' in chunk['message']:
+                await websocket.send_text(json.dumps({
+                    "chunk": chunk['message']['content'],
+                    "done": False
+                }))
+
+        # Send completion message
+        await websocket.send_text(json.dumps({
+            "chunk": "",
+            "done": True
+        }))
+
+    except ResponseError as e:
+        await websocket.send_text(json.dumps({
+            "error": f"Ollama error: {str(e)}"
+        }))
+    except Exception as e:
+        await websocket.send_text(json.dumps({
+            "error": f"Processing error: {str(e)}"
+        }))
 
 # For development server
 if __name__ == "__main__":

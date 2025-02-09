@@ -20,17 +20,22 @@
                 <option value="">Select a model</option>
                 <!-- Options will be populated dynamically -->
             </select>
+            <div class="use-search-container">
+                <input type="checkbox" id="useSearch" name="useSearch">
+                <label for="useSearch">Use Search</label>
+            </div>
             <button id="clearBtn" onclick="clearChat()">Clear Chat</button>
         </div>
         <div class="message-container" id="messageContainer"></div>
         <div class="status" id="status">Disconnected</div>
         <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Type your message here...">
+            <input type="text" id="messageInput" placeholder="Type your message here">
             <button onclick="sendMessage()" id="sendButton">Send</button>
         </div>
+        <div id="outputWindow"></div>
     </div>
 
     <script src="/frontend/js/common.js"></script>
     <script src="/frontend/js/chat.js"></script>
 </body>
-</html> 
+</html>

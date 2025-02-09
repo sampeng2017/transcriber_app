@@ -47,17 +47,28 @@ git clone https://github.com/sampeng2017/transcriber_app.git
 cd transcriber_app
 ```
 
-2. Install dependencies:
+2. Create a virtual environment:
+python3 -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+4. Set environment variables for Search (optional):
+On macOS/Linux:
+export GOOGLE_API_KEY="your_google_api_key"
+export SEARCH_ENGINE_ID="your_search_engine_id"
+On Windows:
+setx GOOGLE_API_KEY "your_google_api_key"
+setx SEARCH_ENGINE_ID "your_search_engine_id"
 
-3. Start the server:
+4. Start the server:
 ```bash
 uvicorn backend.app:app --reload
 ```
 
-4. Access the application:
+5. Access the application:
 - Chat Interface: http://localhost:8000/chat
 - Transcription Interface: http://localhost:8000/transcribe
 

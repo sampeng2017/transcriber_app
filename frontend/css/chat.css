@@ -1,4 +1,30 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.nav-bar {
+    background-color: #333;
+    overflow: hidden;
+}
+
+.nav-bar a {
+    float: left;
+    display: block;
+    color: #f2f2f2;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.nav-bar a:hover {
+    background-color: #ddd;
+    color: black;
+}
+
 .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
     max-width: 800px;
     margin: 0 auto;
     background-color: white;
@@ -8,18 +34,30 @@
 }
 
 .message-container {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
     height: 500px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    overflow-y: auto;
-    margin-bottom: 20px;
-    padding: 10px;
     background-color: #fff;
 }
 
 .input-container {
     display: flex;
     gap: 10px;
+}
+
+.input-container input {
+    flex: 1;
+    padding: 10px;
+    margin-right: 10px;
+}
+
+.input-container button {
+    padding: 10px;
 }
 
 select, input {
@@ -56,9 +94,27 @@ input {
 
 .controls {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
     align-items: center;
+    margin-bottom: 10px;
+}
+
+.controls select,
+.controls button {
+    margin-right: 10px;
+}
+
+.use-search-container {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.use-search-container input {
+    margin-right: 5px;
+}
+
+.status {
+    margin-bottom: 10px;
 }
 
 #clearBtn {
@@ -143,4 +199,4 @@ input {
 
 .ai-message th {
     background-color: #f8f9fa;
-} 
+}

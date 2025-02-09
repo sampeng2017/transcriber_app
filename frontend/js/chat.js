@@ -3,21 +3,25 @@ const messageInput = document.getElementById('messageInput');
 const modelSelect = document.getElementById('modelSelect');
 const sendButton = document.getElementById('sendButton');
 const statusDiv = document.getElementById('status');
+const useSearchCheckbox = document.getElementById('useSearch');
 let ws = null;
 let currentResponse = null;
 let chatHistory = [];
 const MAX_HISTORY_LENGTH = 4096; // Adjust based on model's context window
 
 function connect() {
+    console.log('Connecting to WebSocket...');
     ws = new WebSocket(`ws://${window.location.host}/chat`);
 
     ws.onopen = () => {
+        console.log('WebSocket connection opened');
         statusDiv.textContent = 'Connected';
         statusDiv.style.color = '#4caf50';
         enableInterface();
     };
 
     ws.onclose = () => {
+        console.log('WebSocket connection closed, attempting to reconnect...');
         statusDiv.textContent = 'Disconnected - Reconnecting...';
         statusDiv.style.color = '#f44336';
         disableInterface();
@@ -31,9 +35,11 @@ function connect() {
     };
 
     ws.onmessage = (event) => {
+        console.log('Received message from WebSocket:', event.data);
         const data = JSON.parse(event.data);
         
         if (data.error) {
+            console.error('Error received from WebSocket:', data.error);
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
             errorDiv.textContent = data.error;
@@ -89,12 +95,14 @@ function connect() {
 }
 
 function clearChat() {
+    console.log('Clearing chat history...');
     chatHistory = [];
     messageContainer.innerHTML = '';
     statusDiv.textContent = 'Chat cleared';
 }
 
 function addMessageToHistory(role, content) {
+    console.log(`Adding message to history: role=${role}, content=${content}`);
     chatHistory.push({ role, content });
     
     // Calculate total length of history
@@ -120,6 +128,10 @@ async function sendMessage() {
         return;
     }
 
+    // Check if "Use Search" is checked
+    const useSearch = useSearchCheckbox.checked;
+    console.log('Use Search checked:', useSearch);
+
     // Add user message to UI
     const userMessageDiv = document.createElement('div');
     userMessageDiv.className = 'user-message';
@@ -134,7 +146,8 @@ async function sendMessage() {
         ws.send(JSON.stringify({
             message: message,
             model: selectedModel, // Use the selected model here
-            history: chatHistory
+            history: chatHistory,
+            useSearch: useSearch // Include the useSearch flag
         }));
 
         // Clear input and disable interface while waiting
@@ -144,12 +157,14 @@ async function sendMessage() {
         currentResponse = null;
 
     } catch (error) {
+        console.error('Error sending message:', error);
         showError(`Error: ${error.message}`);
         enableInterface();
     }
 }
 
 function enableInterface() {
+    console.log('Enabling interface...');
     messageInput.disabled = false;
     modelSelect.disabled = false;
     sendButton.disabled = false;
@@ -157,6 +172,7 @@ function enableInterface() {
 }
 
 function disableInterface() {
+    console.log('Disabling interface...');
     messageInput.disabled = true;
     modelSelect.disabled = true;
     sendButton.disabled = true;
@@ -172,6 +188,8 @@ messageInput.addEventListener('keypress', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     const modelSelect = document.getElementById('modelSelect');
+    const useSearchCheckbox = document.getElementById('useSearch');
+    const useSearchLabel = document.querySelector('label[for="useSearch"]');
 
     // Fetch available models
     fetch('/models')
@@ -187,6 +205,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(error => console.error('Error fetching models:', error));
+
+    // Fetch configuration to check if Google API key and search engine ID are set
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Fetched config:', data); // Debug log
+            if (data.googleApiKey && data.searchEngineId) {
+                useSearchCheckbox.style.display = 'inline';
+                useSearchLabel.style.display = 'inline';
+            } else {
+                useSearchCheckbox.style.display = 'none';
+                useSearchLabel.style.display = 'none';
+            }
+        })
+        .catch(error => console.error('Error fetching config:', error));
 
     // Add change event listener
     modelSelect.addEventListener('change', () => {
@@ -249,4 +282,4 @@ function addMessageToUI(content, isUser) {
     
     messageContainer.appendChild(messageDiv);
     messageContainer.scrollTop = messageContainer.scrollHeight;
-} 
+}
