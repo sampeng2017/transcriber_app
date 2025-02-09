@@ -190,27 +190,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelSelect = document.getElementById('modelSelect');
     const useSearchCheckbox = document.getElementById('useSearch');
     const useSearchLabel = document.querySelector('label[for="useSearch"]');
+    let defaultModel = null;
 
-    // Fetch available models
-    fetch('/models')
-        .then(response => response.json())
-        .then(data => {
-            console.log('Fetched models:', data); // Debug log
-            if (data.models) {
-                console.log('Models array:', data.models); // Log the models array
-                modelSelect.innerHTML = data.models
-                    .map(model => `<option value="${model}">${model}</option>`)
-                    .join('');
-                console.log('Dropdown options:', modelSelect.innerHTML); // Log the dropdown options
-            }
-        })
-        .catch(error => console.error('Error fetching models:', error));
-
-    // Fetch configuration to check if Google API key and search engine ID are set
+    // Fetch configuration to get the DEFAULT_MODEL and check if Google API key and search engine ID are set
     fetch('/api/config')
         .then(response => response.json())
         .then(data => {
             console.log('Fetched config:', data); // Debug log
+            defaultModel = data.defaultModel;
             if (data.googleApiKey && data.searchEngineId) {
                 useSearchCheckbox.style.display = 'inline';
                 useSearchLabel.style.display = 'inline';
@@ -218,6 +205,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 useSearchCheckbox.style.display = 'none';
                 useSearchLabel.style.display = 'none';
             }
+
+            // Fetch available models after getting the default model
+            fetch('/models')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Fetched models:', data); // Debug log
+                    if (data.models) {
+                        console.log('Models array:', data.models); // Log the models array
+                        modelSelect.innerHTML = data.models
+                            .map(model => `<option value="${model}">${model}</option>`)
+                            .join('');
+                        console.log('Dropdown options:', modelSelect.innerHTML); // Log the dropdown options
+
+                        // Select the DEFAULT_MODEL if it is present in the models array
+                        if (data.models.includes(defaultModel)) {
+                            modelSelect.value = defaultModel;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching models:', error));
         })
         .catch(error => console.error('Error fetching config:', error));
 

@@ -158,10 +158,10 @@ async def get_models():
 async def get_config():
     google_api_key = os.getenv("GOOGLE_API_KEY")
     search_engine_id = os.getenv("SEARCH_ENGINE_ID")
-    logger.info(f"Google API Key: {google_api_key}, Search Engine ID: {search_engine_id}")
     return JSONResponse(content={
         "googleApiKey": google_api_key,
-        "searchEngineId": search_engine_id
+        "searchEngineId": search_engine_id,
+        "defaultModel": DEFAULT_MODEL
     })
 
 @app.websocket("/chat")
