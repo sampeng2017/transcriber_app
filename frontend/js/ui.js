@@ -16,8 +16,11 @@ class UI {
 
     sendMessage() {
         const message = this.messageInput.value;
-        // Call the chat class to handle sending the message
-        chat.sendMessage(message);
+        if (typeof sendMessageToServer === 'function') {
+            sendMessageToServer(message);
+        } else {
+            console.error('sendMessageToServer function is not defined.');
+        }
         this.messageInput.value = ''; // Clear input after sending
     }
 
@@ -27,4 +30,12 @@ class UI {
 }
 
 // Initialize UI
-const ui = new UI(); 
+const ui = new UI();
+
+function sendMessageToServer() {
+    // Function implementation
+    console.log("Message sent to server");
+}
+
+// Ensure the function is bound to the send button's click event
+document.getElementById('sendButton').addEventListener('click', sendMessageToServer);

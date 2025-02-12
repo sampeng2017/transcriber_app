@@ -19,10 +19,8 @@ class Chat {
     }
 
     sendMessage(message) {
-        if (this.isConnected) {
-            // Logic to send the message
-            console.log(`Sending message: ${message}`);
-            // Update UI or handle response
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ message }));
         } else {
             console.error('Not connected to chat server.');
         }
