@@ -1,9 +1,12 @@
-const messageContainer = document.getElementById('messageContainer');
-const messageInput = document.getElementById('messageInput');
-const modelSelect = document.getElementById('modelSelect');
-const sendButton = document.getElementById('sendButton');
-const statusDiv = document.getElementById('status');
-const useSearchCheckbox = document.getElementById('useSearch');
+// frontend/js/chat.js
+
+// Use jQuery to access DOM elements
+const $messageContainer = $('#messageContainer');
+const $messageInput = $('#messageInput');
+const $modelSelect = $('#modelSelect');
+const $sendButton = $('#sendButton');
+const $statusDiv = $('#status');
+const $useSearchCheckbox = $('#useSearch');
 let ws = null;
 let currentResponse = null;
 let chatHistory = [];
@@ -47,23 +50,20 @@ function connect() {
 
     ws.onopen = () => {
         console.log('WebSocket connection opened');
-        statusDiv.textContent = 'Connected';
-        statusDiv.style.color = '#4caf50';
+        $statusDiv.text('Connected').css('color', '#4caf50');
         enableInterface();
     };
 
     ws.onclose = () => {
         console.log('WebSocket connection closed, attempting to reconnect...');
-        statusDiv.textContent = 'Disconnected - Reconnecting...';
-        statusDiv.style.color = '#f44336';
+        $statusDiv.text('Disconnected - Reconnecting...').css('color', '#f44336');
         disableInterface();
         setTimeout(connect, 3000);
     };
 
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        statusDiv.textContent = 'Connection error';
-        statusDiv.style.color = '#f44336';
+        $statusDiv.text('Connection error').css('color', '#f44336');
     };
 
     ws.onmessage = (event) => {
@@ -72,50 +72,46 @@ function connect() {
         
         if (data.error) {
             console.error('Error received from WebSocket:', data.error);
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = data.error;
-            messageContainer.appendChild(errorDiv);
+            const $errorDiv = $('<div>').addClass('error-message').text(data.error);
+            $messageContainer.append($errorDiv);
             enableInterface();
             return;
         }
 
         if (currentResponse === null) {
-            currentResponse = document.createElement('div');
-            currentResponse.className = 'ai-message';
-            currentResponse.setAttribute('data-content', ''); // Initialize empty content
-            messageContainer.appendChild(currentResponse);
+            currentResponse = $('<div>').addClass('ai-message').attr('data-content', ''); // Initialize empty content
+            $messageContainer.append(currentResponse);
         }
 
         if (!data.done) {
             // Accumulate content
-            const newContent = currentResponse.getAttribute('data-content') + data.chunk;
-            currentResponse.setAttribute('data-content', newContent);
+            const newContent = currentResponse.attr('data-content') + data.chunk;
+            currentResponse.attr('data-content', newContent);
             
             // Render accumulated content
             try {
-                currentResponse.innerHTML = marked.parse(newContent, {
+                currentResponse.html(marked.parse(newContent, {
                     breaks: true,
                     gfm: true,
                     sanitize: true
-                });
+                }));
             } catch (e) {
                 // If markdown parsing fails, show raw content
-                currentResponse.textContent = newContent;
+                currentResponse.text(newContent);
             }
             
-            messageContainer.scrollTop = messageContainer.scrollHeight;
+            $messageContainer.scrollTop($messageContainer[0].scrollHeight);
         } else {
             // Final render
-            const finalContent = currentResponse.getAttribute('data-content');
+            const finalContent = currentResponse.attr('data-content');
             try {
-                currentResponse.innerHTML = marked.parse(finalContent, {
+                currentResponse.html(marked.parse(finalContent, {
                     breaks: true,
                     gfm: true,
                     sanitize: true
-                });
+                }));
             } catch (e) {
-                currentResponse.textContent = finalContent;
+                currentResponse.text(finalContent);
             }
             
             // Add to history and cleanup
@@ -129,8 +125,8 @@ function connect() {
 function clearChat() {
     console.log('Clearing chat history...');
     chatHistory = [];
-    messageContainer.innerHTML = '';
-    statusDiv.textContent = 'Chat cleared';
+    $messageContainer.empty();
+    $statusDiv.text('Chat cleared');
 }
 
 function addMessageToHistory(role, content) {
@@ -148,11 +144,11 @@ function addMessageToHistory(role, content) {
 }
 
 async function sendMessage() {
-    const message = messageInput.value.trim();
+    const message = $messageInput.val().trim();
     if (!message) return;
 
     // Get the selected model from the dropdown
-    const selectedModel = modelSelect.value; // Ensure this captures the selected model
+    const selectedModel = $modelSelect.val(); // Ensure this captures the selected model
     console.log('Selected model from dropdown:', selectedModel); // Debug log
 
     if (!selectedModel) {
@@ -161,14 +157,12 @@ async function sendMessage() {
     }
 
     // Check if "Use Search" is checked
-    const useSearch = useSearchCheckbox.checked;
+    const useSearch = $useSearchCheckbox.is(':checked');
     console.log('Use Search checked:', useSearch);
 
     // Add user message to UI
-    const userMessageDiv = document.createElement('div');
-    userMessageDiv.className = 'user-message';
-    userMessageDiv.textContent = message;
-    messageContainer.appendChild(userMessageDiv);
+    const $userMessageDiv = $('<div>').addClass('user-message').text(message);
+    $messageContainer.append($userMessageDiv);
 
     // Add to history
     addMessageToHistory('user', message);
@@ -183,9 +177,9 @@ async function sendMessage() {
         }));
 
         // Clear input and disable interface while waiting
-        messageInput.value = '';
+        $messageInput.val('');
         disableInterface();
-        messageContainer.scrollTop = messageContainer.scrollHeight;
+        $messageContainer.scrollTop($messageContainer[0].scrollHeight);
         currentResponse = null;
 
     } catch (error) {
@@ -197,31 +191,31 @@ async function sendMessage() {
 
 function enableInterface() {
     console.log('Enabling interface...');
-    messageInput.disabled = false;
-    modelSelect.disabled = false;
-    sendButton.disabled = false;
-    messageInput.focus();
+    $messageInput.prop('disabled', false);
+    $modelSelect.prop('disabled', false);
+    $sendButton.prop('disabled', false);
+    $messageInput.focus();
 }
 
 function disableInterface() {
     console.log('Disabling interface...');
-    messageInput.disabled = true;
-    modelSelect.disabled = true;
-    sendButton.disabled = true;
+    $messageInput.prop('disabled', true);
+    $modelSelect.prop('disabled', true);
+    $sendButton.prop('disabled', true);
 }
 
 // Handle enter key
-messageInput.addEventListener('keypress', (e) => {
+$messageInput.on('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
     }
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    const modelSelect = document.getElementById('modelSelect');
-    const useSearchCheckbox = document.getElementById('useSearch');
-    const useSearchLabel = document.querySelector('label[for="useSearch"]');
+$(document).ready(() => {
+    const $modelSelect = $('#modelSelect');
+    const $useSearchCheckbox = $('#useSearch');
+    const $useSearchLabel = $('label[for="useSearch"]');
     let defaultModel = null;
 
     // Fetch configuration to get the DEFAULT_MODEL and check if Google API key and search engine ID are set
@@ -231,11 +225,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Fetched config:', data); // Debug log
             defaultModel = data.defaultModel;
             if (data.googleApiKey && data.searchEngineId) {
-                useSearchCheckbox.style.display = 'inline';
-                useSearchLabel.style.display = 'inline';
+                $useSearchCheckbox.show();
+                $useSearchLabel.show();
             } else {
-                useSearchCheckbox.style.display = 'none';
-                useSearchLabel.style.display = 'none';
+                $useSearchCheckbox.hide();
+                $useSearchLabel.hide();
             }
 
             // Fetch available models after getting the default model
@@ -245,14 +239,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Fetched models:', data); // Debug log
                     if (data.models) {
                         console.log('Models array:', data.models); // Log the models array
-                        modelSelect.innerHTML = data.models
+                        $modelSelect.html(data.models
                             .map(model => `<option value="${model}">${model}</option>`)
-                            .join('');
-                        console.log('Dropdown options:', modelSelect.innerHTML); // Log the dropdown options
+                            .join(''));
+                        console.log('Dropdown options:', $modelSelect.html()); // Log the dropdown options
 
                         // Select the DEFAULT_MODEL if it is present in the models array
                         if (data.models.includes(defaultModel)) {
-                            modelSelect.value = defaultModel;
+                            $modelSelect.val(defaultModel);
                         }
                     }
                 })
@@ -261,8 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => console.error('Error fetching config:', error));
 
     // Add change event listener
-    modelSelect.addEventListener('change', () => {
-        console.log('Dropdown changed, selected model:', modelSelect.value);
+    $modelSelect.on('change', () => {
+        console.log('Dropdown changed, selected model:', $modelSelect.val());
     });
 });
 
@@ -305,20 +299,19 @@ function safeMarkdownRender(content) {
 
 // Update the message display function
 function addMessageToUI(content, isUser) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = isUser ? 'user-message' : 'ai-message';
+    const $messageDiv = $('<div>').addClass(isUser ? 'user-message' : 'ai-message');
     
     if (!isUser && containsMarkdown(content)) {
         // Use marked to render markdown
-        messageDiv.innerHTML = marked.parse(content, {
+        $messageDiv.html(marked.parse(content, {
             breaks: true, // Enable line breaks
             gfm: true, // Enable GitHub Flavored Markdown
             sanitize: true // Prevent XSS attacks
-        });
+        }));
     } else {
-        messageDiv.textContent = content;
+        $messageDiv.text(content);
     }
     
-    messageContainer.appendChild(messageDiv);
-    messageContainer.scrollTop = messageContainer.scrollHeight;
+    $messageContainer.append($messageDiv);
+    $messageContainer.scrollTop($messageContainer[0].scrollHeight);
 }
