@@ -9,6 +9,38 @@ let currentResponse = null;
 let chatHistory = [];
 const MAX_HISTORY_LENGTH = 4096; // Adjust based on model's context window
 
+class Chat {
+    constructor() {
+        this.isConnected = false;
+        // Additional initialization if needed
+    }
+
+    sendMessage(message) {
+        if (this.isConnected) {
+            // Logic to send the message
+            console.log(`Sending message: ${message}`);
+            // Update UI or handle response
+        } else {
+            console.error('Not connected to chat server.');
+        }
+    }
+
+    connect() {
+        // Logic to connect to chat server
+        this.isConnected = true;
+        ui.updateStatus('Connected');
+    }
+
+    disconnect() {
+        // Logic to disconnect from chat server
+        this.isConnected = false;
+        ui.updateStatus('Disconnected');
+    }
+}
+
+// Initialize Chat
+const chat = new Chat();
+
 function connect() {
     console.log('Connecting to WebSocket...');
     ws = new WebSocket(`ws://${window.location.host}/chat`);
