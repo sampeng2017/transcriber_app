@@ -408,6 +408,50 @@ function clearChat() {
     copyResultBtn.style.display = 'none';
 }
 
+// WebSocket connection function
+function connect() {
+    const ws = new WebSocket('ws://localhost:8000/chat');
+    
+    ws.onopen = () => {
+        console.log('WebSocket connection established');
+    };
+    
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+            console.error('WebSocket error:', data.error);
+            return;
+        }
+        // Handle the received message
+        if (data.chunk) {
+            // Update UI with received chunk
+            updateTranscription(data.chunk);
+        }
+    };
+    
+    ws.onclose = () => {
+        console.log('WebSocket connection closed');
+        // Attempt to reconnect after a delay
+        setTimeout(connect, 1000);
+    };
+    
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+    
+    return ws;
+}
+
+// Helper function to update transcription
+function updateTranscription(text) {
+    if (transcriptionDiv) {
+        transcriptionDiv.textContent += text;
+    }
+}
+
+// Initial connection
+connect();
+
 document.addEventListener('DOMContentLoaded', () => {
     const modelSelectTranscribe = document.getElementById('modelSelect');
 
@@ -452,11 +496,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Fetched config:', data); // Debug log
             defaultModel = data.defaultModel;
             if (data.googleApiKey && data.searchEngineId) {
-                useSearchCheckbox.style.display = 'inline';
-                useSearchLabel.style.display = 'inline';
+                if (useSearchCheckbox) useSearchCheckbox.style.display = 'inline';
+                if (useSearchLabel) useSearchLabel.style.display = 'inline';
             } else {
-                useSearchCheckbox.style.display = 'none';
-                useSearchLabel.style.display = 'none';
+                if (useSearchCheckbox) useSearchCheckbox.style.display = 'none';
+                if (useSearchLabel) useSearchLabel.style.display = 'none';
             }
 
             // Fetch available models after getting the default model
@@ -486,6 +530,3 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Dropdown changed, selected model:', modelSelect.value);
     });
 });
-
-// Initial connection
-connect();
