@@ -100,17 +100,39 @@ function handleFile(file) {
     uploadFile(file);
 }
 
+// Utility function to show error messages
 function showError(message) {
     status.innerHTML = `<div class="error-message">${message}</div>`;
 }
 
+// Utility function to update progress
+function updateProgress(progressElement, percentage) {
+    progressElement.textContent = `${Math.round(percentage)}%`;
+}
+
+// Utility function to reset UI elements
+function resetUIElements() {
+    transcriptionBlock.style.display = 'none';
+    resultBlock.style.display = 'none';
+    transcriptionDiv.style.display = 'none';
+    transcriptionDiv.textContent = '';
+    summaryDiv.style.display = 'none';
+    summaryDiv.textContent = '';
+    notesDiv.style.display = 'none';
+    notesDiv.innerHTML = '';
+    copyTranscriptBtn.style.display = 'none';
+    copyResultBtn.style.display = 'none';
+    actionControls.style.display = 'none';
+    transcribeProgress.style.display = 'none';
+    processProgress.style.display = 'none';
+}
+
+// Improved uploadFile function
 async function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    resetUI();  // Reset UI first
-
-    // Show progress
+    resetUIElements();  // Reset UI first
     transcribeProgress.style.display = 'block';
     status.textContent = 'Transcribing...';
     let progress = 0;
@@ -118,7 +140,7 @@ async function uploadFile(file) {
     const progressInterval = setInterval(() => {
         progress += Math.random() * 15;
         if (progress > 90) progress = 90;
-        transcribePercentage.textContent = `${Math.round(progress)}%`;
+        updateProgress(transcribePercentage, progress);
     }, 1000);
 
     try {
@@ -132,21 +154,16 @@ async function uploadFile(file) {
         }
 
         const data = await response.json();
-        transcribePercentage.textContent = '100%';
+        updateProgress(transcribePercentage, 100);
         
         setTimeout(() => {
             transcribeProgress.style.display = 'none';
-            
-            // Show transcription block and its contents
             transcriptionBlock.style.display = 'block';
-            transcriptionDiv.style.display = 'block';  // Make sure the div itself is visible
+            transcriptionDiv.style.display = 'block';
             transcriptionDiv.textContent = data.transcription;
-            
-            // Show copy button and controls
             copyTranscriptBtn.style.display = 'flex';
             actionControls.style.display = 'block';
             processBtn.disabled = false;
-            
             status.textContent = 'Transcription complete';
         }, 500);
 
@@ -293,20 +310,11 @@ async function processTranscription() {
 // Initialize everything when the DOM is fully loaded
 function initializeUI() {
     console.log('Initializing UI...');
-    
-    // Initialize prompts if they exist
-    if (summaryPromptText) summaryPromptText.value = DEFAULT_SUMMARY_PROMPT;
-    if (notesPromptText) notesPromptText.value = DEFAULT_NOTES_PROMPT;
-    
-    // Initialize prompt controls with Chrome-specific handling
+    resetUIElements(); // Reset UI on initialization
     initializePromptControls();
-    
-    // Add action select listener
     if (actionSelect) {
         actionSelect.addEventListener('change', updatePromptVisibility);
     }
-    
-    // Initial visibility update
     updatePromptVisibility();
 }
 
@@ -398,32 +406,6 @@ function clearChat() {
     // ... existing code ...
     copyTranscriptBtn.style.display = 'none';
     copyResultBtn.style.display = 'none';
-}
-
-// Update the resetUI function to be more specific
-function resetUI() {
-    // Hide blocks
-    transcriptionBlock.style.display = 'none';
-    resultBlock.style.display = 'none';
-    
-    // Reset transcription
-    transcriptionDiv.style.display = 'none';
-    transcriptionDiv.textContent = '';
-    
-    // Reset result sections
-    summaryDiv.style.display = 'none';
-    summaryDiv.textContent = '';
-    notesDiv.style.display = 'none';
-    notesDiv.innerHTML = '';
-    
-    // Hide buttons and controls
-    copyTranscriptBtn.style.display = 'none';
-    copyResultBtn.style.display = 'none';
-    actionControls.style.display = 'none';
-    
-    // Reset progress
-    transcribeProgress.style.display = 'none';
-    processProgress.style.display = 'none';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
