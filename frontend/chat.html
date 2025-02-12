@@ -16,7 +16,9 @@
     </div>
 
     <div class="chat-container">
-        <div class="controls">
+        <div class="message-container" id="messageContainer"></div>
+        <div class="status" id="status">Disconnected</div>
+        <div class="input-container">
             <select id="modelSelect">
                 <option value="">Select a model</option>
                 <!-- Options will be populated dynamically -->
@@ -26,10 +28,6 @@
                 <label for="useSearch">Use Search</label>
             </div>
             <button id="clearBtn">Clear Chat</button>
-        </div>
-        <div class="message-container" id="messageContainer"></div>
-        <div class="status" id="status">Disconnected</div>
-        <div class="input-container">
             <input type="text" id="messageInput" placeholder="Type your message here">
             <button id="sendButton">Send</button>
         </div>
