@@ -32,6 +32,11 @@ async def get_chat():
     with open("frontend/chat.html") as f:
         return HTMLResponse(content=f.read())
 
+# Map root route to /chat
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return await get_chat()
+
 # Serve transcribe.html
 @app.get("/transcribe", response_class=HTMLResponse)
 async def get_transcribe():
