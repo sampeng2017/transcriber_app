@@ -33,21 +33,25 @@ app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
 # Serve index.html at root
 @app.get("/")
-async def read_root():
+async def read_root() -> FileResponse:
+    """Serve the main chat HTML file."""
     return FileResponse("frontend/chat.html")
 
 @app.get("/chat")
-async def read_chat():
+async def read_chat() -> FileResponse:
+    """Serve the chat HTML file."""
     return FileResponse("frontend/chat.html")
 
 @app.get("/transcribe")
-async def read_transcribe():
+async def read_transcribe() -> FileResponse:
+    """Serve the transcription HTML file."""
     return FileResponse("frontend/transcribe.html")
 
 # Load Whisper model
 try:
     whisper_model = whisper.load_model("base")
 except Exception as e:
+    logger.error(f"Failed to load Whisper model: {str(e)}")
     raise RuntimeError(f"Failed to load Whisper model: {str(e)}")
 
 # Ensure a temp folder exists
@@ -55,56 +59,51 @@ TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Initialize an empty list for models
-MODELS = []
+MODELS: List[str] = []
 
-async def get_ollama_models():
+async def get_ollama_models() -> List[str]:
+    """Fetch available models from the Ollama API."""
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get("http://localhost:11434/api/tags")
-            if response.status_code == 200:
-                data = response.json()
-                # Extract model names from the response
-                models = [model["name"] for model in data["models"]]
-                logger.info(f"Retrieved models from Ollama: {models}")  # Log the retrieved models
-                return models
-            else:
-                logger.error(f"Failed to fetch models, status code: {response.status_code}")
-                return []
+            response.raise_for_status()  # Raise an error for bad responses
+            data = response.json()
+            models = [model["name"] for model in data["models"]]
+            logger.info(f"Retrieved models from Ollama: {models}")
+            return models
     except Exception as e:
         logger.error(f"Error fetching Ollama models: {e}")
         return []
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
+    """Startup event to load models."""
     global MODELS
     MODELS = await get_ollama_models()
     if not MODELS:
-        logger.warning("Warning: No Ollama models found. Please ensure Ollama is running and models are installed.")
-        # Fallback to some default models in case the fetch fails
-        MODELS = ["mistral:7b", "llama2:7b", "qwen2:7b"]
-    logger.info(f"Models available at startup: {MODELS}")  # Log the models available at startup
+        logger.warning("No Ollama models found. Falling back to default models.")
+        MODELS.extend(["mistral:7b", "llama2:7b", "qwen2:7b"])
+    logger.info(f"Models available at startup: {MODELS}")
 
 @app.post("/transcribe/")
-async def transcribe_audio(file: UploadFile = File(...)):
+async def transcribe_audio(file: UploadFile = File(...)) -> dict:
+    """Transcribe audio file to text."""
     try:
-        # Save uploaded file
         file_path = os.path.join(TEMP_DIR, file.filename)
         with open(file_path, "wb") as f:
             f.write(await file.read())
 
-        # Transcribe audio to text
         if not os.path.exists(file_path):
             raise HTTPException(status_code=400, detail="Uploaded file not found.")
         
         result = whisper_model.transcribe(file_path)
         transcription = result["text"]
-
-        # Remove temporary file after processing
-        os.remove(file_path)
+        os.remove(file_path)  # Clean up the temporary file
 
         return {"transcription": transcription}
 
     except Exception as e:
+        logger.error(f"Transcription failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
 @app.post("/summarize/")
@@ -112,19 +111,19 @@ async def summarize_text(
     text: str = Form(...), 
     model: str = Form(DEFAULT_MODEL),
     prompt: str = Form("Please summarize this text concisely:\n\n")
-):
+) -> dict:
+    """Summarize the provided text using the specified model."""
     try:
         response = ollama.chat(
             model=model,
-            messages=[{
-                "role": "user", 
-                "content": f"{prompt}{text}"
-            }]
+            messages=[{"role": "user", "content": f"{prompt}{text}"}]
         )
         return {"summary": response["message"]["content"]}
     except ResponseError as e:
+        logger.error(f"Ollama error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ollama error: {str(e)}")
     except Exception as e:
+        logger.error(f"Summarization failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
 
 @app.post("/convert-to-notes/")
@@ -132,30 +131,32 @@ async def convert_to_notes(
     text: str = Form(...), 
     model: str = Form(DEFAULT_MODEL),
     prompt: str = Form(None)
-):
+) -> dict:
+    """Convert the provided text into meeting notes."""
+    if prompt is None:
+        prompt = "Convert this transcript into detailed yet informal meeting notes..."
+        
     try:
-        if prompt is None:
-            prompt = """Convert this transcript into detailed yet informal meeting notes..."""  # Your existing default prompt
-            
         response = ollama.chat(
             model=model,
-            messages=[{
-                "role": "user", 
-                "content": f"{prompt}\n\nTranscript:\n{text}"
-            }]
+            messages=[{"role": "user", "content": f"{prompt}\n\nTranscript:\n{text}"}]
         )
         return {"notes": response["message"]["content"]}
     except ResponseError as e:
+        logger.error(f"Ollama error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ollama error: {str(e)}")
     except Exception as e:
+        logger.error(f"Notes conversion failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Notes conversion failed: {str(e)}")
 
 @app.get("/models")
-async def get_models():
+async def get_models() -> JSONResponse:
+    """Return the list of available models."""
     return JSONResponse(content={"models": MODELS})
 
 @app.get("/api/config")
-async def get_config():
+async def get_config() -> JSONResponse:
+    """Return configuration details."""
     google_api_key = os.getenv("GOOGLE_API_KEY")
     search_engine_id = os.getenv("SEARCH_ENGINE_ID")
     return JSONResponse(content={
@@ -165,21 +166,15 @@ async def get_config():
     })
 
 @app.websocket("/chat")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
+    """Handle WebSocket connections for chat."""
     await websocket.accept()
     
     try:
         while True:
-            try:
-                data = await websocket.receive_text()
-                message_data = json.loads(data)
-            except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "error": "Invalid JSON format"
-                }))
-                continue
-            
-            # Extract message data
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+
             model = message_data.get("model", DEFAULT_MODEL)
             message = message_data.get("message", "").strip()
             history = message_data.get("history", [])
@@ -188,38 +183,27 @@ async def websocket_endpoint(websocket: WebSocket):
             logger.info(f"Received message: {message}, use_search: {use_search}")
 
             if not message:
-                await websocket.send_text(json.dumps({
-                    "error": "Empty message"
-                }))
+                await websocket.send_text(json.dumps({"error": "Empty message"}))
                 continue
 
             if use_search:
-                logger.info("Invoking search API...")
                 search_response = perform_search(message)
-                logger.info(f"Search API response: {search_response}")
                 search_results = format_search_results(search_response)
-                logger.info(f"Formatted search results: {search_results}")
                 prompt = f"merge, organize the search response string into a consolidated results, can you bullet list, and can list search sources if available.\n\n{search_results}"
                 await stream_ollama_response(websocket, prompt, model, history)
             else:
                 await stream_ollama_response(websocket, message, model, history)
 
     except WebSocketDisconnect:
-        pass
+        logger.info("WebSocket disconnected")
     except Exception as e:
-        try:
-            await websocket.send_text(json.dumps({
-                "error": f"Unexpected error: {str(e)}"
-            }))
-        except:
-            pass
+        logger.error(f"Unexpected error: {str(e)}")
+        await websocket.send_text(json.dumps({"error": f"Unexpected error: {str(e)}"}))
     finally:
-        try:
-            await websocket.close()
-        except:
-            pass
+        await websocket.close()
 
-def perform_search(query):
+def perform_search(query: str) -> dict:
+    """Perform a search using the Google Custom Search API."""
     google_api_key = os.getenv("GOOGLE_API_KEY")
     search_engine_id = os.getenv("SEARCH_ENGINE_ID")
     if not google_api_key or not search_engine_id:
@@ -238,7 +222,8 @@ def perform_search(query):
     logger.info(f"Search API response: {response.json()}")
     return response.json()
 
-def format_search_results(search_response):
+def format_search_results(search_response: dict) -> str:
+    """Format search results into a readable string."""
     results = []
     for item in search_response.get('items', []):
         title = item.get('title')
@@ -247,7 +232,8 @@ def format_search_results(search_response):
         results.append(f"{title}\n{snippet}\n{link}\n")
     return "\n".join(results)
 
-async def stream_ollama_response(websocket, message, model, history):
+async def stream_ollama_response(websocket: WebSocket, message: str, model: str, history: List[dict]) -> None:
+    """Stream responses from the Ollama API to the WebSocket."""
     try:
         stream = ollama.chat(
             model=model,
@@ -262,7 +248,6 @@ async def stream_ollama_response(websocket, message, model, history):
                     "done": False
                 }))
 
-        # Send completion message
         await websocket.send_text(json.dumps({
             "chunk": "",
             "done": True
