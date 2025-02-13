@@ -23,3 +23,26 @@ async def summarize_text(
     except Exception as e:
         logger.error(f"Summarization failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
+
+@router.post("/convert-to-notes/")
+async def convert_to_notes(
+    text: str = Form(...), 
+    model: str = Form(DEFAULT_MODEL),
+    prompt: str = Form(None)
+) -> dict:
+    """Convert the provided text into meeting notes."""
+    if prompt is None:
+        prompt = "Convert this transcript into detailed yet informal meeting notes..."
+        
+    try:
+        response = chat(
+            model=model,
+            messages=[{"role": "user", "content": f"{prompt}\n\nTranscript:\n{text}"}]
+        )
+        return {"notes": response["message"]["content"]}
+    except ResponseError as e:
+        logger.error(f"Ollama error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ollama error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Notes conversion failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Notes conversion failed: {str(e)}")
